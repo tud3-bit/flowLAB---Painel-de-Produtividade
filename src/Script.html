@@ -1,0 +1,240 @@
+<script>
+  let usuarioLogado = null;
+
+  const hoje = new Date();
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+  
+  document.getElementById('filtroDataInicio').value = primerioDia;
+  document.getElementById('filtroDataFim').value = ultimoDia;
+  document.getElementById('prodData').valueAsDate = hoje;
+
+  function showView(viewId) {
+    const views = ['viewHome', 'viewLogin', 'viewDashboard'];
+    views.forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById(viewId).classList.remove('hidden');
+    
+    if (usuarioLogado) {
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('userLoggedName').innerText = usuarioLogado.nome;
+      document.getElementById('userLoggedRole').innerText = usuarioLogado.cargo;
+    } else {
+      document.getElementById('userInfo').classList.add('hidden');
+    }
+  }
+
+  // Gerenciador de Tema: Inicializa SEMPRE como Claro por padrão
+(function verificarTemaInicial() {
+  const temaSalvo = localStorage.getItem('theme');
+  
+  // Se houver registro explícito de 'dark', ativa. Caso contrário, força o 'light'
+  if (temaSalvo === 'dark') {
+    document.documentElement.classList.add('dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('themeIcon').innerText = '☀️';
+    });
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('themeIcon').innerText = '🌙';
+    });
+  }
+})();
+
+function toggleDarkMode() {
+  const html = document.documentElement;
+  const icone = document.getElementById('themeIcon');
+  
+  if (html.classList.contains('dark')) {
+    html.classList.remove('dark');
+    icone.innerText = '🌙';
+    localStorage.setItem('theme', 'light');
+    showToast('Modo Claro ativado', 'sucesso');
+  } else {
+    html.classList.add('dark');
+    icone.innerText = '☀️';
+    localStorage.setItem('theme', 'dark');
+    showToast('Modo Escuro (Dracula) ativado', 'sucesso');
+  }
+}
+
+  function protectedAction(targetView) {
+    if (!usuarioLogado) {
+      showToast('Acesso Restrito: Faça login primeiro.', 'erro');
+      showView('viewLogin');
+    } else {
+      showView('viewDashboard');
+    }
+  }
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const usuario = document.getElementById('loginUsuario').value;
+    const senha = document.getElementById('loginSenha').value;
+    const btn = document.getElementById('btnLogar');
+    
+    setLoading(btn, true, 'Autenticando...');
+
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        setLoading(btn, false, 'Entrar no Sistema');
+        if (resposta.sucesso) {
+          usuarioLogado = resposta.usuario;
+          document.getElementById('formLogin').reset();
+          showToast(`Bem-vindo, ${usuarioLogado.nome}!`, 'sucesso');
+          
+          // Se for ADMIN, busca a lista completa de profissionais e monta o Select de filtros
+          if (usuarioLogado.cargo === 'Admin') {
+            document.getElementById('containerFiltroAdmin').classList.remove('hidden');
+            google.script.run
+              .withSuccessHandler(function(funcionarios) {
+                const select = document.getElementById('filtroFuncionarioAdmin');
+                select.innerHTML = '';
+                funcionarios.forEach(func => {
+                  const opt = document.createElement('option');
+                  opt.value = func.login;
+                  opt.innerText = `${func.nome} (${func.login})`;
+                  select.appendChild(opt);
+                });
+                // Executa a busca inicial com o primeiro funcionário selecionado da lista
+                carregarDadosDashboard();
+              })
+              .listarFuncionarios();
+          } else {
+            // Se for funcionário comum, esconde o filtro de seleção e carrega direto seus dados
+            document.getElementById('containerFiltroAdmin').classList.add('hidden');
+            carregarDadosDashboard();
+          }
+        } else {
+          showToast(resposta.mensagem, 'erro');
+        }
+      })
+      .withFailureHandler(function() {
+        setLoading(btn, false, 'Entrar no Sistema');
+        showToast('Erro crítico no servidor.', 'erro');
+      })
+      .autenticarUsuario(usuario, senha);
+  }
+
+  function carregarDadosDashboard() {
+    if (!usuarioLogado) return;
+
+    const dataInicio = document.getElementById('filtroDataInicio').value;
+    const dataFim = document.getElementById('filtroDataFim').value;
+    
+    // DEFINIÇÃO DO ALVO: Se for Admin pega o valor do select, senão pega o próprio login logado
+    let loginTarget = usuarioLogado.login;
+    let nomeRelatorio = usuarioLogado.nome;
+
+    if (usuarioLogado.cargo === 'Admin') {
+      const selectAdmin = document.getElementById('filtroFuncionarioAdmin');
+      if (selectAdmin.options.length > 0) {
+        loginTarget = selectAdmin.value;
+        nomeRelatorio = selectAdmin.options[selectAdmin.selectedIndex].text;
+      }
+    }
+
+    const dIniFormatada = dataInicio.split('-').reverse().join('/');
+    const dFimFormatada = dataFim.split('-').reverse().join('/');
+    document.getElementById('subtituloFiltroImpressao').innerText = `Período: de ${dIniFormatada} até ${dFimFormatada} | Profissional: ${nomeRelatorio}`;
+
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        if (resposta.sucesso) {
+          document.getElementById('metricTotalPeriodo').innerText = resposta.metricas.totalPeriodo;
+          
+          const tbody = document.getElementById('tableCorpoProdutividade');
+          tbody.innerHTML = '';
+          
+          if(resposta.registros.length === 0) {
+            document.getElementById('tableVaziaMsg').classList.remove('hidden');
+          } else {
+            document.getElementById('tableVaziaMsg').classList.add('hidden');
+            resposta.registros.forEach(reg => {
+              const tr = document.createElement('tr');
+              tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+              tr.innerHTML = `
+                <td style="padding: 10px;" class="font-medium text-slate-900">${reg.data}</td>
+                <td style="padding: 10px;" class="text-slate-600">${reg.dentista}</td>
+                <td style="padding: 10px;" class="text-slate-700 font-semibold">${reg.procedimento}</td>
+                <td style="padding: 10px;" class="text-slate-500">${reg.descricao || '-'}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+          showView('viewDashboard');
+        } else {
+          showToast(resposta.mensagem, 'erro');
+        }
+      })
+      .buscarDadosDashboard(loginTarget, dataInicio, dataFim);
+  }
+
+  function handleSalvarProdutividade(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btnSalvarProd');
+    const dados = {
+      usuario_login: usuarioLogado.login,
+      data: document.getElementById('prodData').value,
+      dentista: document.getElementById('prodDentista').value,
+      procedimento: document.getElementById('prodProcedimento').value,
+      descricao: document.getElementById('prodDescricao').value
+    };
+
+    setLoading(btn, true, 'Salvando...');
+
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        setLoading(btn, false, 'Salvar Registro');
+        if (resposta.sucesso) {
+          showToast(resposta.mensagem, 'sucesso');
+          document.getElementById('prodProcedimento').value = '';
+          document.getElementById('prodDescricao').value = '';
+          carregarDadosDashboard(); 
+        } else {
+          showToast(resposta.mensagem, 'erro');
+        }
+      })
+      .withFailureHandler(function() {
+        setLoading(btn, false, 'Salvar Registro');
+        showToast('Falha técnica ao salvar.', 'erro');
+      })
+      .salvarProdutividade(dados);
+  }
+
+  function criarRelatorio() {
+    const tbody = document.getElementById('tableCorpoProdutividade');
+    if (tbody.children.length === 0) {
+      showToast('Não existem registros no período selecionado para gerar o relatório.', 'erro');
+      return;
+    }
+    window.print();
+  }
+
+  function logout() {
+    usuarioLogado = null;
+    showToast('Sessão encerrada.', 'sucesso');
+    showView('viewHome');
+  }
+
+  function showToast(mensagem, tipo) {
+    const toast = document.getElementById('toast');
+    toast.innerText = mensagem;
+    toast.classList.remove('hidden', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-800', 'border-rose-200', 'bg-rose-50', 'text-rose-800');
+    
+    if (tipo === 'sucesso') {
+      toast.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-800');
+    } else {
+      toast.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-800');
+    }
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+
+  function setLoading(btnElement, isLoading, text) {
+    btnElement.disabled = isLoading;
+    btnElement.innerHTML = text;
+    if (isLoading) btnElement.classList.add('opacity-50', 'cursor-not-allowed');
+    else btnElement.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+</script>

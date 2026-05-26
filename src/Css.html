@@ -1,0 +1,81 @@
+<style>
+  /* Transição suave global */
+  body, nav, section, main, div, input, select, textarea, button, table, footer {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  }
+
+  /* --- MODO ESCURO COMPLETO (PALETA DRACULA) --- */
+  html.dark body {
+    background-color: #282a36 !important; /* Dracula Background */
+    color: #f8f8f2 !important;            /* Dracula Foreground (Texto Claro) */
+  }
+
+  /* Forçar os containers e cards no modo escuro */
+  html.dark nav, 
+  html.dark footer, 
+  html.dark #viewLogin, 
+  html.dark #viewCadastro, 
+  html.dark #areaRelatorioImpresso,
+  html.dark .bg-white {
+    background-color: #1e1f29 !important; /* Dracula Darker (Navs/Cards) */
+    border-color: #44475a !important;     /* Dracula Selection Border */
+    color: #f8f8f2 !important;
+  }
+
+  /* Títulos, textos e inputs no modo escuro */
+  html.dark h2, html.dark h3, html.dark label, html.dark span:not(.text-teal-600) {
+    color: #f8f8f2 !important;
+  }
+  
+  html.dark p, html.dark .text-slate-500, html.dark .text-slate-600 {
+    color: #6272a4 !important; /* Dracula Comment (Cinza azulado sutil) */
+  }
+
+  /* Modificar os Cards interativos da Home para a estética Dracula */
+  html.dark #viewHome .grid > div {
+    background-color: #1e1f29 !important;
+    border-color: #44475a !important;
+  }
+  html.dark #viewHome .grid > div:hover {
+    border-color: #bd93f9 !important; /* Roxo Dracula no Hover */
+    background-color: #282a36 !important;
+  }
+
+  /* Inputs e Caixas de Seleção no modo Dracula */
+  html.dark input, html.dark select, html.dark textarea {
+    background-color: #282a36 !important;
+    border-color: #44475a !important;
+    color: #f8f8f2 !important;
+  }
+  html.dark input:focus, html.dark select:focus, html.dark textarea:focus {
+    border-color: #ff79c6 !important; /* Rosa Dracula para foco de digitação */
+    box-shadow: 0 0 0 1px #ff79c6 !important;
+  }
+
+  /* Elementos da Tabela no Painel */
+  html.dark table thead tr {
+    background-color: #44475a !important; /* Dracula Selection */
+  }
+  html.dark table thead th {
+    color: #50fa7b !important; /* Verde Dracula para os cabeçalhos da tabela */
+  }
+  html.dark table tbody tr:hover {
+    background-color: rgba(68, 71, 90, 0.3) !important;
+  }
+
+  /* --- SEGURANÇA PARA IMPRESSÃO --- */
+  @media print {
+    html, body { 
+      background-color: #ffffff !important; 
+      color: #000000 !important; 
+    }
+    nav, footer, #viewHome, #viewLogin, #viewCadastro, .no-print, button, input, select {
+      display: none !important;
+    }
+    main { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+    #viewDashboard { display: block !important; }
+    .print-area { border: none !important; box-shadow: none !important; width: 100% !important; background-color: #ffffff !important; }
+    th, td { border-bottom: 1px solid #94a3b8 !important; padding: 8px !important; color: #000000 !important; }
+    #subtituloFiltroImpressao { color: #475569 !important; }
+  }
+</style>

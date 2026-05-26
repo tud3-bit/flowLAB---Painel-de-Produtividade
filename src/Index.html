@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>flowLAB - Painel de Produtividade</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <?!= include('Css'); ?>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+<nav class="bg-white border-b border-slate-200 py-4 px-6 flex justify-between items-center transition-colors">
+  <div class="flex items-center gap-2">
+    <div class="bg-teal-600 text-white p-2 rounded-lg font-bold text-xl shadow-md shadow-teal-100">flow</div>
+    <span class="text-xl font-bold tracking-tight text-slate-900"><span class="text-teal-600">LAB</span></span>
+  </div>
+  
+  <div class="flex items-center gap-4">
+    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer" title="Alternar Tema">
+      <span id="themeIcon">🌙</span>
+    </button>
+
+    <div id="userInfo" class="hidden flex items-center gap-4">
+      <div class="text-right">
+        <p id="userLoggedName" class="text-sm font-semibold text-slate-900"></p>
+        <p id="userLoggedRole" class="text-xs text-slate-500"></p>
+      </div>
+      <button onclick="logout()" class="text-sm text-rose-600 hover:text-rose-700 font-medium bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-md transition cursor-pointer">Sair</button>
+    </div>
+  </div>
+</nav>
+
+<main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
+  
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white border shadow-lg rounded-xl p-4 transition-all duration-300"></div>
+
+  <section id="viewHome" class="space-y-6">
+    <div class="bg-gradient-to-r from-teal-700 to-cyan-600 rounded-2xl p-6 md:p-8 text-white shadow-lg shadow-teal-900/10">
+        <h1 class="text-2xl md:text-4xl font-bold text-white">Gestão de Produtividade Clínica</h1>
+      <p class="text-white! opacity-90 mt-2 text-sm md:text-base">Gere relatórios customizados e realize impressões de fechamentos por data.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div id="cardLoginAction" onclick="showView('viewLogin')" class="bg-white border border-slate-200 p-6 rounded-xl shadow-xs hover:shadow-md cursor-pointer transition flex flex-col justify-between group">
+        <div>
+          <div class="bg-teal-50 text-teal-700 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-xl group-hover:bg-teal-600 group-hover:text-white transition">🔐</div>
+          <h3 class="font-bold text-lg mt-4 text-slate-900">Acessar Conta</h3>
+          <p class="text-slate-500 text-sm mt-1">Faça login para gerenciar seu painel e relatórios.</p>
+        </div>
+        <span class="text-teal-600 font-medium text-sm mt-4 inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">Entrar no painel &rarr;</span>
+      </div>
+
+      <div onclick="protectedAction('viewCadastro')" class="bg-white border border-slate-200 p-6 rounded-xl shadow-xs hover:shadow-md cursor-pointer transition flex flex-col justify-between group">
+        <div>
+          <div class="bg-teal-50 text-teal-700 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-xl group-hover:bg-teal-600 group-hover:text-white transition">📝</div>
+          <h3 class="font-bold text-lg mt-4 text-slate-900">Cadastrar Produtividade</h3>
+          <p class="text-slate-500 text-sm mt-1">Registre novos atendimentos e tratamentos executados.</p>
+        </div>
+        <span class="text-teal-600 font-medium text-sm mt-4 inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">Ir para formulário &rarr;</span>
+      </div>
+
+      <div onclick="protectedAction('dashboard')" class="bg-white border border-slate-200 p-6 rounded-xl shadow-xs hover:shadow-md cursor-pointer transition flex flex-col justify-between group">
+        <div>
+          <div class="bg-teal-50 text-teal-700 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-xl group-hover:bg-teal-600 group-hover:text-white transition">📊</div>
+          <h3 class="font-bold text-lg mt-4 text-slate-900">Filtros e Relatórios</h3>
+          <p class="text-slate-500 text-sm mt-1">Consolide dados por período para imprimir ou salvar em PDF.</p>
+        </div>
+        <span class="text-teal-600 font-medium text-sm mt-4 inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">Visualizar fechamento &rarr;</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="viewLogin" class="hidden max-w-md mx-auto bg-white border border-slate-200 rounded-2xl shadow-xl p-6 md:p-8 mt-10">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-slate-900">Seja bem-vindo</h2>
+    </div>
+    <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Nome de Usuário</label>
+        <input type="text" id="loginUsuario" required class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-teal-500" placeholder="ex: joao.silva">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Senha de Acesso</label>
+        <input type="password" id="loginSenha" required class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-teal-500" placeholder="••••••••">
+      </div>
+      <button type="submit" id="btnLogar" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg transition cursor-pointer">Entrar no Sistema</button>
+      <button type="button" onclick="showView('viewHome')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-lg transition text-sm cursor-pointer">Voltar ao Início</button>
+    </form>
+  </section>
+
+  <section id="viewDashboard" class="hidden space-y-6">
+    
+    <div class="flex flex-wrap justify-between items-center gap-4 no-print">
+      <button onclick="showView('viewHome')" class="text-slate-600 hover:text-slate-900 font-medium inline-flex items-center gap-1 cursor-pointer">&larr; Tela Inicial</button>
+      
+      <button onclick="criarRelatorio()" class="bg-slate-700 hover:bg-slate-800 text-white font-medium px-5 py-2.5 rounded-lg transition text-sm shadow-xs flex items-center gap-2 cursor-pointer">
+        <span>🖨️</span> Criar Relatório (Imprimir)
+      </button>
+    </div>
+
+    <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs no-print flex flex-wrap items-end gap-4">
+      <div id="containerFiltroAdmin" class="hidden w-full sm:w-auto min-w-[200px]">
+        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Filtrar por Funcionário</label>
+        <select id="filtroFuncionarioAdmin" onchange="carregarDadosDashboard()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:border-teal-500">
+        </select>
+      </div>
+
+      <div class="w-full sm:w-auto">
+        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data Inicial</label>
+        <input type="date" id="filtroDataInicio" onchange="carregarDadosDashboard()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:border-teal-500">
+      </div>
+      <div class="w-full sm:w-auto">
+        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data Final</label>
+        <input type="date" id="filtroDataFim" onchange="carregarDadosDashboard()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:border-teal-500">
+      </div>
+      
+      <div class="ml-auto text-right">
+        <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Procedimentos no Período</p>
+        <h3 id="metricTotalPeriodo" class="text-2xl font-bold text-slate-900">0</h3>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      
+      <div id="viewCadastro" class="bg-white border border-slate-200 p-6 rounded-xl shadow-xs space-y-4 lg:col-span-1 no-print">
+        <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">Nova Produtividade</h2>
+        <form id="formProdutividade" onsubmit="handleSalvarProdutividade(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data</label>
+            <input type="date" id="prodData" required class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Dentista Responsável</label>
+            <input type="text" id="prodDentista" required class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500" placeholder="Nome da Clinica / dentista">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Procedimento</label>
+            <input type="text" id="prodProcedimento" required class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500" placeholder="Ex: Modelo de gesso, Montagem">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Descrição</label>
+            <textarea id="prodDescricao" rows="2" class="w-full border border-slate-300 bg-white text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500"></textarea>
+          </div>
+          <button type="submit" id="btnSalvarProd" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 rounded-lg transition text-sm cursor-pointer">Salvar Registro</button>
+        </form>
+      </div>
+
+      <div id="areaRelatorioImpresso" class="print-area bg-white border border-slate-200 p-6 rounded-xl shadow-xs lg:col-span-2 space-y-4">
+        <div class="border-b border-slate-100 pb-2">
+          <h2 class="text-lg font-bold text-slate-900">Relatório de Produtividade Clínica</h2>
+          <p id="subtituloFiltroImpressao" class="text-xs text-slate-500 mt-0.5">Listagem filtrada de procedimentos.</p>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse" style="width: 100%;">
+            <thead>
+              <tr class="border-b border-slate-300 text-slate-500 font-semibold bg-slate-50">
+                <th style="padding: 10px; font-weight: 600;">Data</th>
+                <th style="padding: 10px; font-weight: 600;">Dentista</th>
+                <th style="padding: 10px; font-weight: 600;">Procedimento</th>
+                <th style="padding: 10px; font-weight: 600;">Descrição</th>
+              </tr>
+            </thead>
+            <tbody id="tableCorpoProdutividade" class="divide-y divide-slate-100 text-slate-700">
+            </tbody>
+          </table>
+        </div>
+        <p id="tableVaziaMsg" class="hidden text-center text-slate-400 text-sm py-8">Nenhum procedimento registrado no intervalo selecionado.</p>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="bg-white border-t border-slate-200 text-center py-4 text-xs text-slate-400 no-print transition-colors">
+  &copy; 2026 flowLAB Módulo Corporativo.
+</footer>
+
+  <?!= include('Script'); ?>
+</body>
+</html>
