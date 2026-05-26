@@ -1,6 +1,8 @@
-# flowLAB - Painel de Produtividade Protética 🦷
+# flowLAB - Painel de Produtividade Protética 
 
-O **flowLAB** é um sistema moderno de gestão de produtividade e relatórios customizados para laboratórios odontológicos. Desenvolvido para funcionar de forma integrada ao ecossistema Google (Google Apps Script e Google Sheets), ele oferece uma interface web fluida, segura e com controle de acessos baseado em cargos.
+O **flowLAB** é um sistema moderno de gestão de produtividade e relatórios customizados para laboratórios odontológicos. 
+Desenvolvido para funcionar de forma integrada ao ecossistema Google (Google Apps Script e Google Sheets), 
+ele oferece uma interface web fluida, segura e com controle de acessos baseado em cargos.
 
 ## 🚀 Funcionalidades Principais
 
