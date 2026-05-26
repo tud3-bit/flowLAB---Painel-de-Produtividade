@@ -1,6 +1,7 @@
 # flowLAB - Painel de Produtividade Clínica 🦷
 
-O **flowLAB** é um sistema moderno de gestão de produtividade e relatórios customizados para clínicas odontológicas e médicas. Desenvolvido para funcionar de forma integrada ao ecossistema Google (Google Apps Script e Google Sheets), ele oferece uma interface web fluida, segura e com controle de acessos baseado em cargos.
+O **flowLAB** é um sistema moderno de gestão de produtividade e relatórios customizados para Laboratorios odontológicos. 
+Desenvolvido para funcionar de forma integrada ao ecossistema Google (Google Apps Script e Google Sheets), ele oferece uma interface web fluida, segura e com controle de acessos baseado em cargos.
 
 ## 🚀 Funcionalidades Principais
 
