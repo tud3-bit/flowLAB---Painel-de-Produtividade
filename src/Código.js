@@ -57,6 +57,7 @@ function autenticarUsuario(usuario, senha) {
 
 /**
  * 2. LISTAR FUNCIONÁRIOS (EXCLUSIVO PARA O SELECT DO ADMIN NO FRONTEND)
+ * Mapeia os usuários ativos e adiciona o token global para cálculos de BI
  */
 function listarFuncionarios() {
   try {
@@ -65,10 +66,7 @@ function listarFuncionarios() {
     
     const dados = sheet.getDataRange().getValues();
     const lista = [];
-    
-    // Opcional: Adiciona uma opção global para o administrador ver tudo
-    lista.push({ nome: "Todos os Técnicos", login: "todos" });
-    
+  
     for (let i = 1; i < dados.length; i++) {
       if (dados[i][2]) { 
         lista.push({
@@ -102,7 +100,7 @@ function salvarProdutividade(dados) {
       dados.usuario_login,
       dados.dentista,
       dados.paciente,
-      dados.producao,       
+      dados.producao,      
       Number(dados.quantidade),
       dataHoraRegistro,     
       Number(dados.valor)   
@@ -115,55 +113,95 @@ function salvarProdutividade(dados) {
 }
 
 /**
- * 4. BUSCAR DADOS FILTRADOS PARA TABELA ANALÍTICA E FECHAMENTO
- * Coleta os registros estruturados e calcula os somatórios essenciais
+ * 4. BUSCAR DADOS FILTRADOS PARA TABELA ANALÍTICA, PAINEL DE BI E FECHAMENTO
+ * Coleta os registros estruturados, executa cruzamento de dados e gera indicadores operacionais
  */
 function buscarDadosDashboard(loginTarget, dataInicio, dataFim) {
   try {
-    const sheet = getSheetByName('Produtividade');
-    if (!sheet) return { sucesso: true, registros: [], metricas: { totalElementos: 0, faturamentoTotal: 0 } };
+    const sheetProd = getSheetByName('Produtividade');
+    if (!sheetProd) return { sucesso: true, registros: [], metricas: {} };
     
-    const dados = sheet.getDataRange().getValues();
+    const dados = sheetProd.getDataRange().getValues();
     const registrosFiltrados = [];
     
     let totalElementosPeriodo = 0;
     let faturamentoTotalPeriodo = 0;
     
+    // Dicionários para consolidação de dados e inteligência de BI
+    const trackingTecnicos = {};
+    const trackingItens = {};
+    
+    // Dicionário auxiliar para converter login de tabela em Nome Real
+    const mapeamentoNomes = {};
+    const sheetUser = getSheetByName('Usuarios');
+    if (sheetUser) {
+      const dadosUser = sheetUser.getDataRange().getValues();
+      for (let u = 1; u < dadosUser.length; u++) {
+        if (dadosUser[u][2]) {
+          mapeamentoNomes[dadosUser[u][2].toString().trim().toLowerCase()] = dadosUser[u][1].toString().trim();
+        }
+      }
+    }
+    
     const dInicio = dataInicio ? new Date(dataInicio + 'T00:00:00') : null;
     const dFim = dataFim ? new Date(dataFim + 'T23:59:59') : null;
-    
     const loginProcurado = loginTarget ? loginTarget.toString().trim().toLowerCase() : "";
 
-    // Varre de baixo para cima para trazer os registros mais recentes primeiro
     for (let i = dados.length - 1; i >= 1; i--) {
       const usuarioLinha = dados[i][1].toString().trim().toLowerCase();
-      const dataLinha = new Date(dados[i][6]); // Coluna G: DATATIME
       
-      // Filtro dinâmico por usuário (se for "todos", ignora a checagem de login e traz tudo do período)
+      // Validação defensiva de data para ignorar células em branco ou corrompidas
+      if (!dados[i][6]) continue;
+      const dataLinha = new Date(dados[i][6]); 
+      
       if (loginProcurado === "todos" || usuarioLinha === loginProcurado) {
-        
-        // Filtro por intervalo de datas baseado na Coluna G
         if (dInicio && dataLinha < dInicio) continue;
         if (dFim && dataLinha > dFim) continue;
         
-        const qtd = Number(dados[i][5]);   // Coluna F: QUANTIDADE
-        const valor = Number(dados[i][7]); // Coluna H: VALOR
+        const qtd = Number(dados[i][5]) || 0;   
+        const valor = Number(dados[i][7]) || 0; 
         const subtotal = qtd * valor;
+        const tipoTrabalho = dados[i][4].toString().trim();
 
         totalElementosPeriodo += qtd;
         faturamentoTotalPeriodo += subtotal;
 
+        // --- Algoritmo de BI: Acumulação Estatística ---
+        trackingTecnicos[usuarioLinha] = (trackingTecnicos[usuarioLinha] || 0) + qtd;
+        trackingItens[tipoTrabalho] = (trackingItens[tipoTrabalho] || 0) + qtd;
+
         registrosFiltrados.push({
-          id: dados[i][0],            // Coluna A
-          usuario: dados[i][1],       // Coluna B
-          dentista: dados[i][2],      // Coluna C
-          paciente: dados[i][3],      // Coluna D
-          producao: dados[i][4],      // Coluna E
-          quantidade: qtd,            // Coluna F
+          id: dados[i][0],            
+          usuario: mapeamentoNomes[usuarioLinha] || dados[i][1], // Mostra o Nome Real na tabela corporativa
+          dentista: dados[i][2],      
+          paciente: dados[i][3],      
+          producao: tipoTrabalho,      
+          quantidade: qtd,            
           data: Utilities.formatDate(dataLinha, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm"), 
-          valor: valor,               // Coluna H
-          subtotal: subtotal          // Calculado para renderização do Front
+          valor: valor,               
+          subtotal: subtotal          
         });
+      }
+    }
+
+    // Processamento do Ranking 1: Identificar Maior Produtor Comercial
+    let topTecnico = "-";
+    let topTecnicoQtd = 0;
+    for (let tec in trackingTecnicos) {
+      if (trackingTecnicos[tec] > topTecnicoQtd) {
+        topTecnicoQtd = trackingTecnicos[tec];
+        // Exibe o Nome Real do técnico no Card de BI em caixa alta
+        topTecnico = (mapeamentoNomes[tec] || tec).toUpperCase();
+      }
+    }
+
+    // Processamento do Ranking 2: Identificar Elemento de Maior Giro
+    let topItem = "-";
+    let topItemQtd = 0;
+    for (let item in trackingItens) {
+      if (trackingItens[item] > topItemQtd) {
+        topItemQtd = trackingItens[item];
+        topItem = item;
       }
     }
 
@@ -172,7 +210,12 @@ function buscarDadosDashboard(loginTarget, dataInicio, dataFim) {
       registros: registrosFiltrados,
       metricas: { 
         totalElementos: totalElementosPeriodo, 
-        faturamentoTotal: faturamentoTotalPeriodo 
+        faturamentoTotal: faturamentoTotalPeriodo,
+        ticketMedio: totalElementosPeriodo > 0 ? (faturamentoTotalPeriodo / totalElementosPeriodo) : 0,
+        topTecnico: topTecnico,
+        topTecnicoQtd: topTecnicoQtd,
+        topItem: topItem,
+        topItemQtd: topItemQtd
       }
     };
   } catch (erro) {
