@@ -4,10 +4,29 @@
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
   }
 
+  /* --- REGRAS EXCLUSIVAS PARA O MODO CLARO (PADRÃO) --- */
+  /* Força cores escuras e de alto contraste quando a classe .dark NÃO está no HTML */
+  html:not(.dark) body {
+    background-color: #f8fafc !important; /* Slate 50 */
+    color: #0f172a !important;            /* Slate 900 */
+  }
+
+  html:not(.dark) table tbody tr td {
+    color: #334155 !important; /* Slate 700: Texto perfeitamente legível no modo claro */
+  }
+
+  html:not(.dark) table tbody tr td.font-semibold {
+    color: #0f172a !important; /* Slate 900 para Pacientes e Destaques */
+  }
+
+  html:not(.dark) .text-slate-600, html:not(.dark) .text-slate-500 {
+    color: #475569 !important; /* Força cinza escuro para descrições secundárias */
+  }
+
   /* --- MODO ESCURO COMPLETO (PALETA DRACULA) --- */
   html.dark body {
-    background-color: #282a36 !important; /* Dracula Background */
-    color: #f8f8f2 !important;            /* Dracula Foreground (Texto Claro) */
+    background-color: #282a36 !important;
+    color: #f8f8f2 !important;
   }
 
   /* Forçar os containers, cards e blocos no modo escuro */
@@ -16,29 +35,32 @@
   html.dark #viewLogin, 
   html.dark #viewCadastro, 
   html.dark #areaRelatorioImpresso,
-  html.dark .bg-white {
-    background-color: #1e1f29 !important; /* Dracula Darker (Navs/Cards) */
-    border-color: #44475a !important;     /* Dracula Selection Border */
+  html.dark .bg-white,
+  html.dark .bg-slate-50 {
+    background-color: #1e1f29 !important;
+    border-color: #44475a !important;
     color: #f8f8f2 !important;
   }
 
-  /* Títulos, textos e inputs no modo escuro */
-  html.dark h2, html.dark h3, html.dark label, html.dark span:not(.text-teal-600) {
+  /* Correção de Títulos e Textos no modo escuro */
+  html.dark h1, html.dark h2, html.dark h3, html.dark label, html.dark th {
     color: #f8f8f2 !important;
   }
   
-  html.dark p, html.dark .text-slate-500, html.dark .text-slate-600 {
-    color: #6272a4 !important; /* Dracula Comment (Cinza azulado sutil) */
+  html.dark p, html.dark .text-slate-400, html.dark .text-slate-500, html.dark .text-slate-600 {
+    color: #6272a4 !important; /* Dracula Comment */
   }
 
-  /* Modificar os Cards interativos da Home para a estética Dracula */
-  html.dark #viewHome .grid > div {
-    background-color: #1e1f29 !important;
-    border-color: #44475a !important;
+  html.dark table tbody tr td {
+    color: #f8f8f2 !important;
   }
-  html.dark #viewHome .grid > div:hover {
-    border-color: #bd93f9 !important; /* Roxo Dracula no Hover */
-    background-color: #282a36 !important;
+
+  /* Realces cromáticos de BI */
+  html.dark #metricFaturamentoPeriodo, html.dark table tbody tr td.text-teal-600 {
+    color: #50fa7b !important; /* Verde vibrante Dracula */
+  }
+  html.dark #metricTicketMedio {
+    color: #8be9fd !important; /* Ciano vibrante Dracula */
   }
 
   /* Inputs e Caixas de Seleção no modo Dracula */
@@ -47,23 +69,30 @@
     border-color: #44475a !important;
     color: #f8f8f2 !important;
   }
-  html.dark input:focus, html.dark select:focus, html.dark textarea:focus {
-    border-color: #ff79c6 !important; /* Rosa Dracula para foco de digitação */
-    box-shadow: 0 0 0 1px #ff79c6 !important;
-  }
 
-  /* Elementos da Tabela no Painel */
+  /* Elementos da Tabela no Painel Escuro */
   html.dark table thead tr {
-    background-color: #44475a !important; /* Dracula Selection */
+    background-color: #44475a !important;
   }
   html.dark table thead th {
-    color: #50fa7b !important; /* Verde Dracula para os cabeçalhos da tabela */
-  }
-  html.dark table tbody tr:hover {
-    background-color: rgba(68, 71, 90, 0.3) !important;
+    color: #50fa7b !important;
+    border-bottom: 2px solid #44475a !important;
   }
 
-  /* --- CONFIGURAÇÕES DE IMPRESSÃO --- */
+  /* --- AJUSTE DE LAYOUT: RESPONSIVIDADE DA TABELA (EVITAR CORTES) --- */
+  /* Garante que a tabela use layout fixo ou flexível que não vaze o card */
+  table {
+    table-layout: auto !important;
+    width: 100% !important;
+  }
+
+  /* Diminui levemente o preenchimento interno em telas menores para caber todas as colunas */
+  th, td {
+    padding: 8px 6px !important; 
+    font-size: 13px !important;
+  }
+
+/* --- CONFIGURAÇÕES DE IMPRESSÃO --- */
   @media print {
     html, body { 
       background-color: #ffffff !important; 
@@ -71,7 +100,12 @@
     }
     
     /* Oculta tudo que não pertence ao fechamento físico de papel */
-    nav, footer, #viewHome, #viewLogin, #viewCadastro, .no-print, button, input, select {
+    nav, footer, #viewHome, #viewLogin, #viewCadastro, 
+    .no-print, button, input, select,
+    #cardTicketMedio,
+    #cardMaiorGiro,
+    #cardElementosFeitos, /* Adicione o ID do card de Elementos Feitos */
+    .barra-lateral-menu {
       display: none !important;
     }
     
@@ -81,9 +115,16 @@
       padding: 0 !important; 
       margin: 0 !important; 
     }
+    #areaRelatorioImpresso {
+        display: block !important;
+        width: 100% !important;
+    }
     
-    #viewDashboard { 
+    #viewDashboard {
       display: block !important; 
+    }
+    #cardFaturamentoBruto {
+      display: none !important;
     }
     
     .print-area { 
