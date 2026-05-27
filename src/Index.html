@@ -88,7 +88,7 @@
       </button>
     </div>
 
-    <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs no-print flex flex-wrap items-end gap-6">
+    <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs no-print flex flex-wrap items-end gap-4">
       <div id="containerFiltroAdmin" class="hidden w-full sm:w-auto min-w-[200px]">
         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Filtrar por Técnico</label>
         <select id="filtroFuncionarioAdmin" onchange="carregarDadosDashboard()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:border-teal-500">
@@ -103,16 +103,20 @@
         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data Final</label>
         <input type="date" id="filtroDataFim" onchange="carregarDadosDashboard()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:border-teal-500">
       </div>
-      
-      <div class="ml-auto flex gap-6 text-right">
-        <div>
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Elementos Produzidos</p>
-          <h3 id="metricTotalPeriodo" class="text-2xl font-bold text-slate-900">0</h3>
-        </div>
-        <div>
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Faturamento Bruto</p>
-          <h3 id="metricFaturamentoPeriodo" class="text-2xl font-bold text-teal-600">R$ 0,00</h3>
-        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl">
+      <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Elementos Feitos</p>
+        <h3 id="metricTotalPeriodo" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+      </div>
+      <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Faturamento Bruto</p>
+        <h3 id="metricFaturamentoPeriodo" class="text-2xl font-bold text-teal-600 mt-1">R$ 0,00</h3>
+      </div>
+      <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+        <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Ticket Médio / El.</p>
+        <h3 id="metricTicketMedio" class="text-2xl font-bold text-cyan-600 mt-1">R$ 0,00</h3>
       </div>
     </div>
 
@@ -161,14 +165,8 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm border-collapse" style="width: 100%;">
             <thead>
-              <tr class="border-b border-slate-300 text-slate-500 font-semibold bg-slate-50">
-                <th style="padding: 10px; font-weight: 600;">Data/Hora</th>
-                <th style="padding: 10px; font-weight: 600;">Dentista</th>
-                <th style="padding: 10px; font-weight: 600;">Paciente</th>
-                <th style="padding: 10px; font-weight: 600;">Trabalho</th>
-                <th style="padding: 10px; font-weight: 600; text-align: center;">Qtd</th>
-                <th style="padding: 10px; font-weight: 600; text-align: right;">Subtotal</th>
-              </tr>
+              <tr id="tableHeaderRow" class="border-b border-slate-300 text-slate-500 font-semibold bg-slate-50">
+                </tr>
             </thead>
             <tbody id="tableCorpoProdutividade" class="divide-y divide-slate-100 text-slate-700">
             </tbody>
@@ -185,6 +183,6 @@
   &copy; 2026 flowLAB Módulo Corporativo.
 </footer>
 
-  <?!= include('Script'); ?>
+<?!= include('Script'); ?>
 </body>
 </html>
