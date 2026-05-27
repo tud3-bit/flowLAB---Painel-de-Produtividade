@@ -28,7 +28,7 @@
     }
   }
 
-  // Gerenciador de Tema: Inicializa SEMPRE como Claro por padrão ou busca localStorage
+  // Gerenciador de Tema
   (function verificarTemaInicial() {
     const temaSalvo = localStorage.getItem('theme');
     if (temaSalvo === 'dark') {
@@ -57,7 +57,7 @@
       html.classList.add('dark');
       icone.innerText = '☀️';
       localStorage.setItem('theme', 'dark');
-      showToast('Modo Escuro (Dracula) ativado', 'sucesso');
+      showToast('Modo Escuro ativado', 'sucesso');
     }
   }
 
@@ -93,11 +93,12 @@
             google.script.run
               .withSuccessHandler(function(funcionarios) {
                 const select = document.getElementById('filtroFuncionarioAdmin');
-                select.innerHTML = '';
+                select.innerHTML = '<option value="todos">-- TODOS OS TÉCNICOS --</option>';
+                
                 funcionarios.forEach(func => {
                   const opt = document.createElement('option');
                   opt.value = func.login;
-                  opt.innerText = `${func.nome} (${func.login})`;
+                  opt.innerText = `${func.nome}`;
                   select.appendChild(opt);
                 });
                 carregarDadosDashboard();
@@ -118,10 +119,7 @@
       .autenticarUsuario(usuario, senha);
   }
 
-  /**
-   * Coleta dados do backend e atualiza a tabela analítica e os cards de somatórios básicos
-   */
-  function carregarDadosDashboard() {
+function carregarDadosDashboard() {
     if (!usuarioLogado) return;
 
     const dataInicio = document.getElementById('filtroDataInicio').value;
@@ -140,32 +138,74 @@
 
     const dIniFormatada = dataInicio.split('-').reverse().join('/');
     const dFimFormatada = dataFim.split('-').reverse().join('/');
-    document.getElementById('subtituloFiltroImpressao').innerText = `Período: de ${dIniFormatada} até ${dFimFormatada} | Técnico: ${nomeRelatorio}`;
+    document.getElementById('subtituloFiltroImpressao').innerText = `Período: de ${dIniFormatada} até ${dFimFormatada} | Filtro: ${nomeRelatorio}`;
 
     google.script.run
       .withSuccessHandler(function(resposta) {
         if (resposta.sucesso) {
-          // Atualiza os cartões de métricas superiores essenciais
+          // 1. Atualização dos Cards Superiores
           document.getElementById('metricTotalPeriodo').innerText = resposta.metricas.totalElementos;
           document.getElementById('metricFaturamentoPeriodo').innerText = resposta.metricas.faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          document.getElementById('metricTicketMedio').innerText = resposta.metricas.ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
           
+          /*const labelBI = document.getElementById('labelTopBI');
+          const valueBI = document.getElementById('valueTopBI');
+          if (loginTarget === "todos") {
+            labelBI.innerText = "Top Produtor (Equipe)";
+            valueBI.innerText = `${resposta.metricas.topTecnico} (${resposta.metricas.topTecnicoQtd} el.)`;
+          } else {
+            labelBI.innerText = "Maior Giro (Trabalho)";
+            valueBI.innerText = `${resposta.metricas.topItem} (${resposta.metricas.topItemQtd} el.)`;
+          }*/
+
+          // 2. Montagem Dinâmica das Colunas da Tabela
+          const headerRow = document.getElementById('tableHeaderRow');
+          const isAdminTodos = (loginTarget === "todos");
+          
+          headerRow.innerHTML = `
+            <th style="padding: 10px; font-weight: 600;">Data/Hora</th>
+            ${isAdminTodos ? '<th style="padding: 10px; font-weight: 600;">Técnico</th>' : ''}
+            <th style="padding: 10px; font-weight: 600;">Dentista</th>
+            <th style="padding: 10px; font-weight: 600;">Paciente</th>
+            <th style="padding: 10px; font-weight: 600;">Trabalho</th>
+            <th style="padding: 10px; font-weight: 600; text-align: center;">Qtd</th>
+            <th style="padding: 10px; font-weight: 600; text-align: right;">Subtotal</th>
+          `;
+          
+          // 3. Renderização Segura das Linhas da Tabela
           const tbody = document.getElementById('tableCorpoProdutividade');
+          const tabelaPai = tbody.parentElement; // Elemento <table>
           tbody.innerHTML = '';
           
-          if(resposta.registros.length === 0) {
+          // Limpa qualquer rodapé antigo antes de recalcular
+          const tfootAntigo = tabelaPai.querySelector('tfoot');
+          if (tfootAntigo) tfootAntigo.remove();
+          
+          if (resposta.registros.length === 0) {
             document.getElementById('tableVaziaMsg').classList.remove('hidden');
           } else {
             document.getElementById('tableVaziaMsg').classList.add('hidden');
+            
+            // Variáveis locais para acumular os totais que irão para a impressão
+            let acumuladorQtd = 0;
+            let acumuladorFaturamento = 0;
+            
             resposta.registros.forEach(reg => {
+              // Incrementa os acumuladores
+              acumuladorQtd += parseInt(reg.quantidade || 0);
+              acumuladorFaturamento += parseFloat(reg.subtotal || 0);
+              
               const tr = document.createElement('tr');
-              tr.className = 'border-b border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/30';
+              tr.className = 'border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-100';
+              
               tr.innerHTML = `
-                <td style="padding: 10px;" class="font-medium text-slate-900">${reg.data}</td>
-                <td style="padding: 10px;" class="text-slate-600">${reg.dentista}</td>
-                <td style="padding: 10px;" class="text-slate-700 font-semibold">${reg.paciente}</td>
-                <td style="padding: 10px;" class="text-slate-600">${reg.producao}</td>
-                <td style="padding: 10px; text-align: center;" class="text-slate-500">${reg.quantidade}</td>
-                <td style="padding: 10px; text-align: right;" class="text-teal-600 font-bold">${reg.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <td style="padding: 10px;" class="font-medium">${reg.data}</td>
+                ${isAdminTodos ? `<td style="padding: 10px;" class="font-semibold uppercase text-xs tracking-wider text-slate-700 dark:text-slate-300">${reg.usuario}</td>` : ''}
+                <td style="padding: 10px;" class="text-slate-600 dark:text-slate-300">${reg.dentista}</td>
+                <td style="padding: 10px;" class="font-semibold text-slate-900 dark:text-slate-100">${reg.paciente}</td>
+                <td style="padding: 10px;" class="text-slate-600 dark:text-slate-300">${reg.producao}</td>
+                <td style="padding: 10px; text-align: center;" class="text-slate-500 dark:text-slate-400">${reg.quantidade}</td>
+                <td style="padding: 10px; text-align: right;" class="font-bold text-teal-600 dark:text-emerald-400">${reg.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
               `;
               tbody.appendChild(tr);
             });
@@ -233,15 +273,27 @@
   function showToast(mensagem, tipo) {
     const toast = document.getElementById('toast');
     toast.innerText = mensagem;
-    toast.classList.remove('hidden', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-800', 'border-rose-200', 'bg-rose-50', 'text-rose-800');
     
+    toast.className = "hidden fixed bottom-5 right-5 z-50 max-w-sm w-full shadow-lg rounded-xl p-4 transition-all duration-300 border";
+    
+    toast.classList.add(
+        'bg-white',                // Fundo branco
+        'border-slate-200',        // Borda cinza clara
+        'text-slate-900',          // Texto cinza escuro
+        'dark:bg-slate-800',       // Fundo escuro (se usar dark mode)
+        'dark:border-slate-700',   // Borda escura
+        'dark:text-white'          // Texto claro no dark mode
+    );
+
+    // Se quiser manter uma pequena indicação de cor na borda esquerda:
     if (tipo === 'sucesso') {
-      toast.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-800');
+        toast.classList.add('border-l-4', 'border-l-emerald-500');
     } else {
-      toast.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-800');
+        toast.classList.add('border-l-4', 'border-l-rose-500');
     }
+    
     toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 4000);
+    setTimeout(() => toast.classList.add('hidden'), 3000);
   }
 
   function setLoading(btnElement, isLoading, text) {
